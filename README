@@ -1,0 +1,39 @@
+Logan McDonald (TR Section) and Veronica Salm (WF Section)
+CMPUT 275, Winter 2017
+
+MODIFIED FILES: Code that was independently created or modified includes most of server.py and parts of client.cpp, serial_handling.h and serial_handling.cpp. 
+
+COLLABORATED CODE: This code was colaboratively created by both partners. The files other than those listed as modified (see above) are identical to those found in the assignment_resources folder on eclass. Much of the code in the modified files was also provided on eclass.
+
+WIRING INSTRUCTIONS: See the included file circuit-wiring.txt for instructions on how to wire the Arduino and the required accessories.
+
+HOW TO RUN THE CODE: 
+1. Open two bash terminals.
+2. Connect the Arduino to the PC and use the command arduino-port-select to set the serial port of the Arduino to -ACM0. Then ensure that you are within the folder containing the files "client.cpp", "map.h", "map.cpp", "serial_handling.cpp", "serial_handling.h", and for optional diagnostic print statements, "dprintf.h" and "dprintf.cpp". Then compile and run the code by typing the command "make upload" in the first bash terminal. 
+3. In the second bash terminal, ensure that you are in the directory containing the files "server.py", "adjacencygraph.py", "textserial.py", "cs_message.py", and "edmonton-roads-2.0.2.txt". Then use the command "python3 server.py -s /dev/ttyACM0" to begin serial communication with the Arduino. This will both construct the Edmonton graph and conduct the server protocol outlined in the assignment description.
+4. On the Arduino, you can then use the joystick to move around the map, the zoom buttons to zoom in and out, and the joystick button to request a path.
+
+Note: The individual functions of the program server.py can also be called separately from another file if desired. The server protocol will not run, as it will only do so if the program is run from the command line.
+Also note that the above steps must be completed in the order listed as the client must be ready before the server or the serial communication will fail to initialize.
+
+GENERAL NOTES / PROBLEM AREAS:
+For information concerning server.py, see the docstring at the top of that file.
+
+Dprintf and logging statements were left in but can be turned off if desired. For instructions on how to do this, see dprintf.h (switch order of #undef and #define statements) and cs_message.py (set logging to "False").
+
+In client.cpp:
+1. The max path length was changed to 400 to accomodate the longest possible path we found while testing.
+2. When drawing the path, we constrain each waypoint's coordinates and only draw them if they are visible (potentially increasing drawing speed for very long paths). 
+3. We added tft print statements to inform the user in the following situations:
+	- "Select a path" at the top of the screen when a new path should be selected
+	- "Timeout!" in the middle of the screen when a timeout error occurs
+	- "Error!" if the Arduino receives badly formatted or incorrect input
+	- "No path!" if the path length received is 0, meaning that there is no path in the data between those two points.
+	- "Path too long" followed by "Keeping max points..." if a path length is greater than the maximum allowed.
+	- Other update text informs the user when waiting for the server and of the path length if a path is found.
+
+In serial_handling.cpp and serial_handling.h:
+1. We implemented error handling to check for badly formatted or incorrect input coming from the server. In the case of bad input, the server resets to the start state and waits for new input. In this case, the client will timeout and reset. If the client receives bad input, an error message will occur and it will jump back to displaying the map and wait for a new path.
+2. Timeout protocol: we modified the serial_readline() function to take a third parameter, which is a boolean called get_len. The header file (serial_handling.h) was also modified to accomodate the boolean parameter.
+	- if get_len is true, the client is getting the path length from the server and the timeout should be 10 seconds
+	- otherwise if get_len is false, the timeout is set to 1 second by default
